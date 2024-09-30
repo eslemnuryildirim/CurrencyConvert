@@ -1,0 +1,79 @@
+﻿@model List<CurrencyConvert.Models.CurrencyRate>
+
+<h2>Döviz Kuru Grafiği</h2>
+
+<!-- Para birimi seçimi için form -->
+@{
+    var currencyCodes = new List<string> { "USD", "EUR", "TRY", "GBP" };
+    var selectedCurrencyCode = Context.Request.Query["currencyCode"].ToString(); // Burayı güncelledim
+}
+
+<form method="get" action="/Graph/Graph">
+    <label for="currencyCode">Döviz Kodu Seçin:</label>
+    <select id="currencyCode" name="currencyCode" required>
+        @foreach (var currencyCode in currencyCodes)
+        {
+            if (currencyCode == selectedCurrencyCode)
+            {
+                <option value="@currencyCode" selected="selected">@currencyCode</option>
+            }
+            else
+            {
+                <option value="@currencyCode">@currencyCode</option>
+            }
+        }
+    </select>
+    <button type="submit">Grafiği Göster</button>
+</form>
+
+@if (Model != null && Model.Any())
+{
+    <h3>@Model.FirstOrDefault()?.CurrencyCode Döviz Kuru (Son 7 Gün)</h3>
+
+    <!-- Grafik için Canvas -->
+    <canvas id="currencyChart" width="150" height="75"></canvas>
+
+    <!-- Chart.js Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Grafik için verileri hazırlıyoruz
+        var currencyLabels = @Html.Raw(Json.Serialize(Model.Select(x => x.Date.ToString("dd/MM/yyyy"))));
+        var sellingData = @Html.Raw(Json.Serialize(Model.Select(x => x.Selling)));
+
+        var ctx = document.getElementById('currencyChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: currencyLabels, // Tarih bilgilerini x eksenine koyuyoruz
+                datasets: [
+                    {
+                        label: '@Model.FirstOrDefault()?.CurrencyCode Satış Kuru',
+                        data: sellingData,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    </script>
+}
+else
+{
+    <div class="alert alert-info">
+        Lütfen bir döviz birimi seçin ve grafiği göstermek için "Grafiği Göster" butonuna basın.
+    </div>
+}
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}

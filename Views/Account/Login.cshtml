@@ -1,0 +1,23 @@
+﻿@{
+    ViewBag.Title = "Giriş Yap";
+}
+
+<h2>Giriş Yap</h2>
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @ViewBag.Error
+    </div>
+}
+
+<form method="post" asp-controller="Account" asp-action="Login">
+    <div>
+        <labels>Kullanıcı Adı:</labels>
+        <input type="text" name="username" required />
+    </div>
+    <div>
+        <label>Şifre:</label>
+        <input type="password" name="password" required />
+    </div>
+    <button type="submit">Giriş Yap</button>
+</form>

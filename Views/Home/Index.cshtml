@@ -1,0 +1,42 @@
+﻿@{
+    ViewBag.Title = "Döviz Çevirici";
+}
+
+<h1>Döviz Çevirici</h1>
+
+<form method="post" asp-action="ConvertCurrency">
+    <div>
+        <label for="fromCurrency">Kaynak Para Birimi:</label>
+        <select id="fromCurrency" name="fromCurrency" required>
+            @foreach (var currency in ViewBag.Currencies)
+            {
+                <option value="@currency">@currency</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="toCurrency">Hedef Para Birimi:</label>
+        <select id="toCurrency" name="toCurrency" required>
+            @foreach (var currency in ViewBag.Currencies)
+            {
+                <option value="@currency">@currency</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="amount">Miktar:</label>
+        <input type="number" id="amount" name="amount" step="0.01" min="0" required />
+    </div>
+    <button type="submit">Çevir</button>
+</form>
+
+@if (ViewBag.ConversionResult != null)
+{
+    <h2>Dönüşüm Sonucu:</h2>
+    <p>
+        @ViewBag.Amount @ViewBag.FromCurrency = @ViewBag.ConversionResult @ViewBag.ToCurrency
+    </p>
+}
+<div>
+    <a href="/CurrencyTable/Index">Günlük Kurlar İçin Tıklayın.</a>
+</div>

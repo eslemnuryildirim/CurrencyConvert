@@ -1,0 +1,28 @@
+﻿@model List<CurrencyConvert.Models.CurrencyTableViewModel>
+
+<h2>Döviz Kurları @Model.FirstOrDefault()?.Date.ToString("dd/MM/yyyy")</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Currency Code</th>
+            <th>Currency Name</th>
+            <th>Effective Buying</th>
+            <th>Effective Selling</th>
+            <th>Buying</th>
+            <th>Selling</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.CurrencyCode</td>
+                <td>@item.CurrencyName</td>
+                <td>@item.EffectiveBuying</td>
+                <td>@item.EffectiveSelling</td>
+                <td>@item.Buying</td>
+                <td>@item.Selling</td>
+            </tr>
+        }
+    </tbody>
+</table>

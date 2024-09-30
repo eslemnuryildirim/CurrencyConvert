@@ -1,0 +1,60 @@
+﻿@model List<CurrencyConvert.Models.CurrencyRate>
+
+<h2>Döviz Kuru Bilgileri</h2>
+
+<form method="post" action="/CurrencyTable/Index">
+    <label for="date">Tarih:</label>
+    <input type="date" id="date" name="date" required />
+
+    <button type="submit">Getir</button>
+</form>
+
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-success">
+        @ViewBag.Message
+    </div>
+}
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">
+        @ViewBag.Error
+    </div>
+}
+
+@if (Model != null && Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Döviz Kodu</th>
+                <th>Döviz Adı</th>
+                <th>Etkin Alış</th>
+                <th>Etkin Satış</th>
+                <th>Alış</th>
+                <th>Satış</th>
+                <th>Tarih</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.CurrencyCode</td>
+                    <td>@item.CurrencyName</td>
+                    <td>@item.EffectiveBuying</td>
+                    <td>@item.EffectiveSelling</td>
+                    <td>@item.Buying</td>
+                    <td>@item.Selling</td>
+                    <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">
+        Seçilen tarihe ait döviz verisi bulunamadı.
+    </div>
+}
