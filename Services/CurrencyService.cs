@@ -1,29 +1,33 @@
 ﻿using System.Globalization;
 using System.Xml.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace CurrencyConvert.Services
 {
     public class CurrencyService
     {
         private readonly HttpClient _httpClient;
+        private readonly string _baseUrl;
 
-        public CurrencyService(HttpClient httpClient)
+        public CurrencyService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _baseUrl = configuration["CurrencyApi:Url"] ?? "https://www.tcmb.gov.tr/kurlar";
         }
 
-        public async Task<XDocument> GetCurrencyDataAsync(string date)
+        // Currency verilerini API'den çeker
+        public async Task<XDocument> GetCurrenciesByDateAsync(string date)
         {
             string year = date.Substring(0, 4);  // yyyy
             string month = date.Substring(4, 2); // MM
             string day = date.Substring(6, 2);   // dd
 
-            var url = $"https://www.tcmb.gov.tr/kurlar/{year}{month}/{day}{month}{year}.xml";
-
+            var url = date == DateTime.Today.ToString("yyyyMMdd")
+                ? $"{_baseUrl}/today.xml"
+                : $"{_baseUrl}/{year}{month}/{day}{month}{year}.xml";
 
             try
             {
-                // API'den gelen yanıtı alıp döndürme
                 var response = await _httpClient.GetStringAsync(url);
                 return XDocument.Parse(response);
             }
@@ -41,6 +45,7 @@ namespace CurrencyConvert.Services
 
 
 
+        // Belirli bir tarih için döviz kurlarını alır
         public decimal? GetCurrencyRate(XDocument exchangeRates, string currencyCode)
         {
             if (currencyCode == "TRY")
@@ -65,9 +70,10 @@ namespace CurrencyConvert.Services
             return null;
         }
 
+        // İki döviz arasındaki çevirme işlemi
         public async Task<decimal?> ConvertAmount(decimal amount, string fromCurrencyCode, string toCurrencyCode, string date)
         {
-            var exchangeRates = await GetCurrencyDataAsync(date);
+            var exchangeRates = await GetCurrenciesByDateAsync(date);
 
             if (exchangeRates == null)
                 return null;

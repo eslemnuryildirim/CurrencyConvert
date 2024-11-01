@@ -1,79 +1,86 @@
-﻿@model List<CurrencyConvert.Models.CurrencyRate>
+﻿@using System.Globalization
+@model IEnumerable<CurrencyConvert.Models.CurrencyRate>
 
-<h2>Döviz Kuru Grafiği</h2>
-
-<!-- Para birimi seçimi için form -->
 @{
+    // Razor'da C# kodunu işliyoruz
     var currencyCodes = new List<string> { "USD", "EUR", "TRY", "GBP" };
-    var selectedCurrencyCode = Context.Request.Query["currencyCode"].ToString(); // Burayı güncelledim
-}
+    var selectedCurrencyCode = ViewBag.SelectedCurrencyCode as string;
 
+    // Model'den gelen verileri listeye çeviriyoruz ve sayıları doğru formatta hazırlıyoruz
+    var currencyLabels = Model.Select(x => x.Date.ToString("dd/MM/yyyy")).ToList();
+    var sellingData = Model.Select(x => x.Selling.ToString("F2", CultureInfo.InvariantCulture)).ToList(); // Satış verilerini iki ondalık basamağa yuvarlıyoruz
+}
+<script>
+    // Razor'dan JavaScript'e JSON formatında verileri aktarıyoruz
+    var currencyLabels = @Html.Raw(Json.Serialize(currencyLabels));
+    var sellingData = @Html.Raw(Json.Serialize(sellingData));
+</script>
+
+
+
+<!-- Döviz Kodu Seçimi Formu -->
 <form method="get" action="/Graph/Graph">
     <label for="currencyCode">Döviz Kodu Seçin:</label>
     <select id="currencyCode" name="currencyCode" required>
         @foreach (var currencyCode in currencyCodes)
         {
-            if (currencyCode == selectedCurrencyCode)
-            {
-                <option value="@currencyCode" selected="selected">@currencyCode</option>
-            }
-            else
-            {
-                <option value="@currencyCode">@currencyCode</option>
-            }
+            <option value="@currencyCode" selected="@(currencyCode == selectedCurrencyCode ? "selected" : null)">@currencyCode</option>
         }
     </select>
+
+    <!-- Zaman Aralığı Seçimi -->
+    <label for="timeRange">Zaman Aralığı Seçin:</label>
+    <select id="timeRange" name="timeRange" required>
+        <option value="15days">Son 15 Gün</option>
+        <option value="1month">Son 1 Ay</option>
+        <option value="1year">Son 6 Ay</option>
+    </select>
+
     <button type="submit">Grafiği Göster</button>
 </form>
 
 @if (Model != null && Model.Any())
 {
-    <h3>@Model.FirstOrDefault()?.CurrencyCode Döviz Kuru (Son 7 Gün)</h3>
-
-    <!-- Grafik için Canvas -->
+    <h3>@Model.FirstOrDefault()?.CurrencyCode Döviz Kuru (Seçilen Zaman Aralığı)</h3>
     <canvas id="currencyChart" width="150" height="75"></canvas>
 
-    <!-- Chart.js Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script>
-        // Grafik için verileri hazırlıyoruz
-        var currencyLabels = @Html.Raw(Json.Serialize(Model.Select(x => x.Date.ToString("dd/MM/yyyy"))));
-        var sellingData = @Html.Raw(Json.Serialize(Model.Select(x => x.Selling)));
-
         var ctx = document.getElementById('currencyChart').getContext('2d');
         var chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: currencyLabels, // Tarih bilgilerini x eksenine koyuyoruz
-                datasets: [
-                    {
-                        label: '@Model.FirstOrDefault()?.CurrencyCode Satış Kuru',
-                        data: sellingData,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        fill: false
-                    }
-                ]
+                labels: currencyLabels, // Tarih bilgilerini kullanarak x ekseni
+                datasets: [{
+                    label: '@Model.FirstOrDefault()?.CurrencyCode Satış Kuru',
+                    data: sellingData, // Satış verileri
+                    borderColor: 'rgba(75, 192, 192, 1)', // Çizgi rengi
+                    fill: false
+                }]
             },
             options: {
                 responsive: true,
                 scales: {
                     y: {
-                        beginAtZero: false
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function (value) {
+                                return value.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                            }
+                        }
                     }
                 }
             }
         });
     </script>
 }
+else if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
 else
 {
     <div class="alert alert-info">
-        Lütfen bir döviz birimi seçin ve grafiği göstermek için "Grafiği Göster" butonuna basın.
+        Lütfen bir döviz birimi ve zaman aralığı seçin ve grafiği göstermek için "Grafiği Göster" butonuna basın.
     </div>
-}
-
-@if (ViewBag.Error != null)
-{
-    <div class="alert alert-danger">@ViewBag.Error</div>
 }

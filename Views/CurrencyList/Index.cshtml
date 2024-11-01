@@ -1,20 +1,14 @@
-﻿@model List<CurrencyConvert.Models.CurrencyRate>
+﻿@model List<CurrencyConvert.Models.CurrencyTableViewModel>
 
 <h2>Döviz Kuru Bilgileri</h2>
 
-<form method="post" action="/CurrencyTable/Index">
+<!-- Tarih Seçim Formu -->
+<form method="post" action="/CurrencyList/Index">
     <label for="date">Tarih:</label>
     <input type="date" id="date" name="date" required />
-
     <button type="submit">Getir</button>
 </form>
 
-@if (ViewBag.Message != null)
-{
-    <div class="alert alert-success">
-        @ViewBag.Message
-    </div>
-}
 @if (ViewBag.Error != null)
 {
     <div class="alert alert-danger">
@@ -24,7 +18,8 @@
 
 @if (Model != null && Model.Any())
 {
-    <table class="table">
+    <h2>Döviz Kurları @Model.FirstOrDefault()?.Date.ToString("dd/MM/yyyy")</h2>
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Döviz Kodu</th>

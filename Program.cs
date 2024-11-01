@@ -10,17 +10,18 @@ var builder = WebApplication.CreateBuilder(args);
 // IIS ile entegrasyon
 builder.WebHost.UseIISIntegration();
 
-// HttpClient hizmetini ekliyorum
+// HttpClient hizmetini ekliyoruz
 builder.Services.AddHttpClient<CurrencyService>();
 
-// CurrencyService servisini ekliyorum
+// CurrencyService ve CurrencyDataManager servislerini ekliyoruz
 builder.Services.AddScoped<CurrencyService>();
+builder.Services.AddScoped<CurrencyDataManager>();
 
-// Veritabaný baðlantýsýný ekliyorum ApplicationDbContext ile
+// Veritabaný baðlantýsýný ekliyoruz ApplicationDbContext ile
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity servisini ekliyorum
+// Identity servisini ekliyoruz
 builder.Services.AddIdentity<IdentityUser, IdentityRole>() // Identity ve roller eklenir
     .AddEntityFrameworkStores<ApplicationDbContext>() // Entity Framework ile kimlik doðrulama
     .AddDefaultTokenProviders(); // Token oluþturucu eklenir
@@ -72,13 +73,14 @@ app.UseRouting();
 app.UseAuthentication();  // Kimlik doðrulama middleware'ini ekleyin
 app.UseAuthorization();   // Yetkilendirme middleware'ini ekleyin
 
+// Rota tanýmlamalarý
 app.MapControllerRoute(
-    name: "currencyTable",
-    pattern: "{controller=CurrencyTable}/{action=Index}/{id?}");
+    name: "currencyList",
+    pattern: "{controller=CurrencyList}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "Home",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=CurrencyCalculation}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",

@@ -1,85 +1,51 @@
-﻿using CurrencyConvert.Data;
-using CurrencyConvert.Models;
-using CurrencyConvert.Services;
+﻿using CurrencyConvert.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 public class GraphController : Controller
 {
-    private readonly CurrencyService _currencyService;
-    private readonly ApplicationDbContext _context;
+    private readonly CurrencyDataManager _currencyDataManager;
 
-    public GraphController(CurrencyService currencyService, ApplicationDbContext context)
+    public GraphController(CurrencyDataManager currencyDataManager)
     {
-        _currencyService = currencyService;
-        _context = context;
+        _currencyDataManager = currencyDataManager;
     }
 
     // Grafik Gösterimi için action metodu
-    public async Task<IActionResult> Graph(string currencyCode)
+    public async Task<IActionResult> Graph(string currencyCode, string period)
     {
         currencyCode = string.IsNullOrEmpty(currencyCode) ? "USD" : currencyCode;
-        var last10Days = DateTime.Today.AddDays(-10);
 
-        var currencyRates = await _context.CurrencyRates
-            .Where(cr => cr.CurrencyCode == currencyCode && cr.Date >= last10Days)
-            .OrderBy(cr => cr.Date)
-            .ToListAsync();
-
-        // Eğer veritabanında veri yoksa, API'den veri çek ve kaydet
-        if (!currencyRates.Any())
+        // Tarih aralığını seçilen periyoda göre belirleyin
+        DateTime fromDate = period switch
         {
-            for (int i = 0; i < 10; i++)
-            {
-                var date = DateTime.Today.AddDays(-i);
-                var formattedDate = date.ToString("yyyyMMdd");
-                await FetchAndSaveCurrencyRates(formattedDate, currencyCode, date);
-            }
+            "15days" => DateTime.Today.AddDays(-15),
+            "1month" => DateTime.Today.AddMonths(-1),
+            "6months" => DateTime.Today.AddMonths(-6),
+            _ => DateTime.Today.AddDays(-15)
+        };
 
-            currencyRates = await _context.CurrencyRates
-                .Where(cr => cr.CurrencyCode == currencyCode && cr.Date >= last10Days)
-                .OrderBy(cr => cr.Date)
-                .ToListAsync();
-        }
+        // Gün sayısını seçilen periyoda göre ayarlayın
+        int days = period switch
+        {
+            "15days" => 15,
+            "1month" => 30,
+            "6months" => 180,
+            _ => 15
+        };
 
-        // Eğer hala veri yoksa hata göster
+        // Seçilen zaman aralığına göre veriyi çekin ve kaydedin
+        await _currencyDataManager.FetchAndSaveLastXDaysCurrencyRates(currencyCode, days);
+
+        // Güncellenmiş verileri veritabanından tekrar çekin
+        var currencyRates = await _currencyDataManager.FetchCurrencyRates(currencyCode, fromDate);
+
         if (!currencyRates.Any())
         {
             ViewBag.Error = "Seçilen para birimine ait veri bulunamadı.";
             return View();
         }
 
-        // Verileri grafik için View'e gönder
         return View(currencyRates);
     }
 
-    // API'den veri çekip veritabanına kaydeden yardımcı metot
-    private async Task<List<CurrencyRate>> FetchAndSaveCurrencyRates(string formattedDate, string currencyCode, DateTime parsedDate)
-    {
-        var document = await _currencyService.GetCurrencyDataAsync(formattedDate);
-        if (document == null) return null;
-
-        var currencies = document.Descendants("Currency")
-            .Where(x => currencyCode == (string)x.Attribute("CurrencyCode"))
-            .Select(x => new CurrencyRate
-            {
-                CurrencyCode = x.Attribute("CurrencyCode")?.Value ?? "Unknown",
-                CurrencyName = x.Element("Isim")?.Value ?? "Unknown",
-                EffectiveBuying = (decimal?)x.Element("EffectiveBuying") ?? 0,
-                EffectiveSelling = (decimal?)x.Element("EffectiveSelling") ?? 0,
-                Buying = (decimal?)x.Element("ForexBuying") ?? 0,
-                Selling = (decimal?)x.Element("ForexSelling") ?? 0,
-                Date = parsedDate,
-                CreatedDate = DateTime.Now,
-                CreatedBy = "ESLEM"
-            }).ToList();
-
-        if (currencies.Any())
-        {
-            _context.CurrencyRates.AddRange(currencies);
-            await _context.SaveChangesAsync();
-        }
-
-        return currencies;
-    }
 }

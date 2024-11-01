@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
+
 public class AccountController : Controller
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -28,6 +29,8 @@ public class AccountController : Controller
             await _signInManager.SignInAsync(user, isPersistent: false);
             return RedirectToAction("Index", "Home");
         }
+
+  
         return View();
     }
 
